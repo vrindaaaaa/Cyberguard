@@ -8,13 +8,27 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Button
+import android.telecom.TelecomManager
+import android.util.Log
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.aifraudguard.databinding.ActivityMainBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+
+    // Using View Binding for safe and easy access to your layout's views
+    private lateinit var binding: ActivityMainBinding
+    private var userName: String = ""
+    private var userPhone: String = ""
+    private var userEmail: String = ""
 
     private val permissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
@@ -31,72 +45,160 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        requestRequiredPermissions()
-
-        val btnEnableCallerId = findViewById<Button>(R.id.btn_enable_caller_id)
-        btnEnableCallerId.setOnClickListener {
-            requestRole()
-        }
-
-        val btnEnableOverlay = findViewById<Button>(R.id.btn_enable_overlay)
-        btnEnableOverlay.setOnClickListener {
-            requestOverlayPermission()
-        }
-
-        // Inside MainActivity.kt, for example in onCreate()
-
-        val btnEnableAccessibility = findViewById<Button>(R.id.btn_enable_accessibility) // Make sure you have this button in your layout
-        btnEnableAccessibility.setOnClickListener {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        
+        // Check authentication BEFORE inflating layout
+        if (!AuthHelper.isUserAuthenticated()) {
+            // User not authenticated, redirect to AuthActivity
+            val intent = Intent(this, AuthActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
-            Toast.makeText(this, "Please find 'AI Fraud Guard' and enable the service.", Toast.LENGTH_LONG).show()
+            finish()
+            return
         }
-        // Inside your MainActivity.kt's onCreate() method
-        val btnEnableInCall = findViewById<Button>(R.id.btn_enable_incall_service)
-        btnEnableInCall.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val roleManager = getSystemService(RoleManager::class.java)
-                // Request the role of a Call Redirection app, which allows InCallService
-                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_REDIRECTION)
-                settingsLauncher.launch(intent)
-            } else {
-                Toast.makeText(this, "Feature requires Android 10 or higher", Toast.LENGTH_SHORT).show()
+        
+        // Inflate the layout using View Binding
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Get user data from SharedPreferences (will be set after authentication)
+        val sharedPrefs = getSharedPreferences("FraudGuardPrefs", MODE_PRIVATE)
+        userName = sharedPrefs.getString("USER_NAME", null) ?: ""
+        userPhone = sharedPrefs.getString("USER_PHONE_NUMBER", null) ?: ""
+        userEmail = sharedPrefs.getString("USER_EMAIL", null) ?: ""
+
+        // User authenticated, show normal UI
+        binding.welcomeText.text = "Welcome, $userName"
+        binding.profileIcon.setOnClickListener {
+            showProfileDialog()
+        }
+        
+        // Setup ViewPager2 with swipeable pages
+        setupViewPager()
+    }
+    
+    private fun setupViewPager() {
+        val adapter = ViewPagerAdapter(this)
+        binding.viewPager.adapter = adapter
+        
+        // Start on News page (index 0)
+        binding.viewPager.setCurrentItem(0, false)
+        
+        // Setup bottom navigation
+        setupBottomNavigation()
+        
+        // Listen to page changes to update bottom navigation
+        binding.viewPager.registerOnPageChangeCallback(object : androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                updateBottomNavigation(position)
+            }
+        })
+    }
+    
+    private fun setupBottomNavigation() {
+        binding.navNews.setOnClickListener {
+            binding.viewPager.setCurrentItem(0, true)
+        }
+        
+        binding.navAI.setOnClickListener {
+            binding.viewPager.setCurrentItem(1, true)
+        }
+    }
+    
+    private fun updateBottomNavigation(position: Int) {
+        when (position) {
+            0 -> {
+                // News tab selected
+                binding.navNewsIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary))
+                binding.navNewsText.setTextColor(ContextCompat.getColor(this, R.color.primary))
+                binding.navNewsText.setTypeface(null, android.graphics.Typeface.BOLD)
+                
+                binding.navAIIcon.setColorFilter(ContextCompat.getColor(this, R.color.gray))
+                binding.navAIText.setTextColor(ContextCompat.getColor(this, R.color.gray))
+                binding.navAIText.setTypeface(null, android.graphics.Typeface.NORMAL)
+            }
+            1 -> {
+                // AI Assistant tab selected
+                binding.navAIIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary))
+                binding.navAIText.setTextColor(ContextCompat.getColor(this, R.color.primary))
+                binding.navAIText.setTypeface(null, android.graphics.Typeface.BOLD)
+                
+                binding.navNewsIcon.setColorFilter(ContextCompat.getColor(this, R.color.gray))
+                binding.navNewsText.setTextColor(ContextCompat.getColor(this, R.color.gray))
+                binding.navNewsText.setTypeface(null, android.graphics.Typeface.NORMAL)
             }
         }
     }
 
-    private fun requestRequiredPermissions() {
-        val requiredPermissions = arrayOf(
-            Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.CALL_PHONE,
-            Manifest.permission.RECORD_AUDIO
-        )
 
-        val permissionsToRequest = requiredPermissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }.toTypedArray()
 
-        if (permissionsToRequest.isNotEmpty()) {
-            permissionsLauncher.launch(permissionsToRequest)
+    private fun showProfileDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_profile_menu, null)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
+
+        // Get views
+        val ivProfilePhoto = dialogView.findViewById<de.hdodenhof.circleimageview.CircleImageView>(R.id.iv_profile_photo)
+        val tvProfileName = dialogView.findViewById<TextView>(R.id.tv_profile_name)
+        val tvProfileEmail = dialogView.findViewById<TextView>(R.id.tv_profile_email)
+        val btnViewProfile = dialogView.findViewById<android.widget.LinearLayout>(R.id.btn_view_profile)
+        val btnPermissions = dialogView.findViewById<android.widget.LinearLayout>(R.id.btn_permissions)
+        val btnLogout = dialogView.findViewById<android.widget.LinearLayout>(R.id.btn_logout)
+
+        // Load user data
+        val currentUser = AuthHelper.getCurrentUser()
+        tvProfileName.text = userName
+        tvProfileEmail.text = userEmail
+
+        // Load profile photo if available
+        currentUser?.photoUrl?.let { photoUrl ->
+            com.bumptech.glide.Glide.with(this)
+                .load(photoUrl)
+                .placeholder(R.drawable.ic_person)
+                .into(ivProfilePhoto)
         }
+
+        // Set click listeners
+        btnViewProfile.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, ProfileActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnPermissions.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, PermissionsSettingsActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnLogout.setOnClickListener {
+            dialog.dismiss()
+            showLogoutConfirmation()
+        }
+
+        dialog.show()
     }
 
-    private fun requestRole() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                settingsLauncher.launch(intent)
+    private fun showLogoutConfirmation() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Logout") { _, _ ->
+                signOut()
             }
-        }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun requestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-            settingsLauncher.launch(intent)
-        }
+    private fun signOut() {
+        // Sign out using AuthHelper
+        AuthHelper.signOut(this)
+        
+        // Redirect to AuthActivity
+        val intent = Intent(this, AuthActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }

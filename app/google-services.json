@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "545751613062",
+    "project_id": "fraudguard-be62c",
+    "storage_bucket": "fraudguard-be62c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:545751613062:android:d7a7f18c7c29558504db07",
+        "android_client_info": {
+          "package_name": "com.example.aifraudguard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "545751613062-98tksi7c0d07f3qgahbm5kuh9ql3o1l4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.aifraudguard",
+            "certificate_hash": "6c643973ad3c2cacf2c599cb474a0a69f210f2fc"
+          }
+        },
+        {
+          "client_id": "545751613062-m82qupece7rc8c47agdrk4c007n1jlvl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.aifraudguard",
+            "certificate_hash": "d75b02361dbee14d87a7a4947d70267b8d26db35"
+          }
+        },
+        {
+          "client_id": "545751613062-g4kll4mcj0jbpcaq1b537ff4o099vk46.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_SlTcaCNJPNettahwfviGHeIBN_snh7o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "545751613062-g4kll4mcj0jbpcaq1b537ff4o099vk46.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

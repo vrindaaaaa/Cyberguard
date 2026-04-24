@@ -1,0 +1,85 @@
+Aegis: The Real-Time AI Shield for Digital Conversations
+
+(Start with a compelling, personal opening to immediately capture attention)
+
+Good morning. My name is [Your Name], and I'm here with my team to present Aegis. This project isn't just an academic exercise for us; it's deeply personal. A short while ago, my teammate Suhan became the victim of a sophisticated online scam. It started with a simple phone call and ended on WhatsApp, with him losing ₹46,000.
+
+This unsettling experience was a catalyst. It pushed us to investigate the scale of this problem, and what we found was staggering.
+
+The Pervasive Threat & The Market Gap
+
+Telephony and messaging-based financial fraud is a massive, growing global epidemic. Every day, scammers use advanced social engineering tactics to deceive people—from the digitally-native Gen Z to our elderly relatives. These attacks are swift, financially devastating, and exploit the trust we place in our most-used communication tools.
+
+Current solutions, like Truecaller, are valuable but fundamentally reactive. They rely on community reporting to flag a number after a scam has likely already occurred. They can't stop a new scam from a seemingly legitimate number, and crucially, they have no insight into the conversation itself. They see the caller, not the crime.
+
+This is the gap we're here to fill.
+
+Our Solution: Aegis 🛡️
+
+We have built Aegis, an Android application that serves as a real-time, proactive guardian against fraud. Aegis doesn't just check a number; it actively listens to and analyzes conversations and messages for fraudulent patterns as they happen.
+
+    For Calls: As you speak, Aegis analyzes the conversation in the background. If it detects language associated with social engineering, urgency tactics, or known fraud scripts, it triggers an immediate, forceful on-screen alert, advising you to hang up.
+
+    For Messages: When you open a message in apps like WhatsApp, SMS, or Telegram, Aegis scans it instantly. If it contains suspicious links, keywords, or fraudulent patterns, you get an instant warning before you can click or act.
+
+The Technical Architecture: A Symphony of Services
+
+Our system is a robust, microservice-based architecture designed for real-time performance and scalability. Think of it as a coordinated team of specialists working together.
+
+    The Guardian (Android App): The user-facing application built in Kotlin. It handles permissions and is the control center for the user.
+
+    The Bridge (Twilio): Our secure and legal telephony gateway. It solves the critical challenge of accessing call audio, which Android's security model rightly prevents.
+
+    The Conductor (Node.js Backend): The central hub running in a Docker container. It manages webhooks, coordinates data flow between all services, and orchestrates the entire analysis process.
+
+    The Ears (Microsoft Azure Speech-to-Text): The AI "ears" of our system. It transcribes the live call audio into text with incredible speed and accuracy.
+
+    The Brain (Python & TensorFlow AI Model): 🧠 The custom-trained neural network. This is our core intelligence, analyzing the transcribed text to identify fraud.
+
+How It Works: The Real-Time Analysis Flow
+
+Let's walk through the process for a fraudulent call:
+
+    Detection: An unknown number calls. Our CallScreeningService in Android is immediately notified.
+
+    Engagement: The app displays an overlay button: "Protect This Call."
+
+    Connection: Tapping the button initiates a three-way conference call, seamlessly adding our Twilio number as a silent participant.
+
+    Streaming: Twilio receives instructions via a webhook from our Node.js server. The TwiML response tells it to start streaming the call audio over a secure WebSocket to our backend.
+
+    Transcription: The Node.js server receives the raw audio and forwards it in real-time to the Microsoft Azure Speech-to-Text service. Azure's powerful AI transcribes the conversation on the fly.
+
+    Analysis: The transcribed text is sent from Node.js to our Python Flask server. Our custom fraud_model.h5 (a TensorFlow/Keras neural network) analyzes the text and returns a fraud probability score.
+
+    Alert: If the score exceeds our threshold (e.g., 0.75), the Node.js server sends a JSON alert back to the Android app. An alarm sounds, and a pop-up appears with a clear, unmissable warning: "FRAUD LIKELY! HANG UP NOW!"
+
+This entire loop—from speech to alert—happens in near real-time, giving the user the critical seconds they need to act.
+
+For messaging, the process is similar but uses Android's Accessibility Service to scan text content, leveraging the same powerful backend for analysis.
+
+The Road Ahead: Our Vision for a Safer Future 🚀
+
+What we've built is a powerful foundation, but our vision extends much further.
+
+    Immediate Response & Recovery: In the future, if a user falls victim to a scam despite the warning, Aegis will provide a one-tap button to connect directly to the national cybercrime helpline. It will also provide an immediate checklist of actions to take, like freezing bank accounts, empowering the user when they are most vulnerable.
+
+    Hybrid Intelligence Model: We plan to evolve our AI "Brain." The next version will be a hybrid model, combining our current text analysis with sentiment and emotional analysis. This will allow Aegis to detect not just what is being said, but how it's being said—identifying the subtle, manipulative tones of social engineering.
+
+    Dedicated Messaging Analysis Engine: We will develop a separate, specialized model for messaging apps trained to be an expert in detecting malicious links, QR code scams, and emerging text-based fraud patterns.
+
+Why Aegis? Why Now?
+
+We are at a critical juncture where AI can either be used to create more sophisticated scams or to build a shield against them. We choose the shield.
+
+Aegis is different because it is:
+
+    Proactive, Not Reactive.
+
+    Analytical, Not Anecdotal. It analyzes the conversation, not just a phone number's reputation.
+
+    Seamless and Instant. It works in the background without disrupting the user.
+
+We believe Aegis aligns perfectly with Microsoft's commitment to security, AI innovation, and user safety. We are not just building an app; we are building a new standard for digital security.
+
+Thank you. We would be happy to answer any questions you may have.

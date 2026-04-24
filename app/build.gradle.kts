@@ -1,8 +1,12 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     // ✅ Added the required plugin for Jetpack Compose
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -17,6 +21,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Load API keys from properties file
+        val apiKeysFile = rootProject.file("apikeys.properties")
+        if (apiKeysFile.exists()) {
+            val apiKeys = Properties()
+            apiKeys.load(FileInputStream(apiKeysFile))
+            buildConfigField("String", "NEWS_API_KEY", "\"${apiKeys.getProperty("NEWS_API_KEY", "")}\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"${apiKeys.getProperty("GEMINI_API_KEY", "")}\"")
+        } else {
+            buildConfigField("String", "NEWS_API_KEY", "\"\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+        }
     }
 
     buildTypes {
@@ -37,6 +53,8 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
+        buildConfig = true
     }
     // ❌ The old composeOptions block has been removed as it conflicts
     // with the new kotlin.compose plugin.
@@ -49,6 +67,28 @@ dependencies {
     // Provides modern Material Design components
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    
+    // CircleImageView for profile photos
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    
+    // Glide for loading images
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    
+    // Firebase Authentication (for Google Sign-In and Email/Password)
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    
+    // Coroutines for async operations
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    // ViewPager2 for swipeable pages
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
 
     // --- Existing Dependencies (Correct for Compose) ---
     implementation(libs.androidx.core.ktx)
